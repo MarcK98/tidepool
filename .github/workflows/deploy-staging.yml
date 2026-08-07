@@ -1,0 +1,122 @@
+name: Deploy Staging
+
+# The release half of the loop. AgentDeck's team lead runs this by name
+# (`gh workflow run "Deploy Staging"`) once a PR has been signed off and CI is
+# green, so the display name here is load-bearing — it is what the project's
+# `deployWorkflow` setting points at.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: staging
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build staging bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Build
+        working-directory: web
+        # Pages serves the site from /<repo>/, so the asset base has to match or
+        # every script tag 404s.
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      - name: Stamp the build
+        working-directory: web
+        run: |
+          printf '%s\n' \
+            "commit=${GITHUB_SHA}" \
+            "ref=${GITHUB_REF_NAME}" \
+            "run=${GITHUB_RUN_NUMBER}" > dist/BUILD
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    name: Deploy to staging
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  notify:
+    name: Email the release notice
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      # Skipped rather than failed when the mailbox secrets aren't configured:
+      # a missing app password must not turn a good deploy red.
+      - name: Send release email
+        if: ${{ env.MAIL_USERNAME != '' && env.MAIL_PASSWORD != '' }}
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          from: Tidepool Releases <${{ secrets.MAIL_USERNAME }}>
+          to: ${{ secrets.MAIL_TO || secrets.MAIL_USERNAME }}
+          subject: "✅ Tidepool staging deployed — build #${{ github.run_number }}"
+          html_body: |
+            <div style="font-family:-apple-system,Segoe UI,sans-serif;max-width:520px">
+              <h2 style="margin:0 0 4px">Tidepool staging is live</h2>
+              <p style="color:#667;margin:0 0 18px">Build #${{ github.run_number }} · ${{ github.ref_name }}</p>
+              <p><a href="${{ needs.deploy.outputs.url }}"
+                    style="background:#1b6f8f;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">
+                    Open staging</a></p>
+              <p style="color:#667;font-size:13px">
+                Commit <code>${{ github.sha }}</code><br>
+                <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}">Workflow run</a>
+              </p>
+            </div>
+
+      - name: Note when email is not configured
+        if: ${{ env.MAIL_USERNAME == '' || env.MAIL_PASSWORD == '' }}
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+        run: |
+          echo "::notice title=No release email::Set MAIL_USERNAME and MAIL_PASSWORD repo secrets to email on deploy."
+
+      - name: Summary
+        run: |
+          {
+            echo "### Staging deployed"
+            echo ""
+            echo "- URL: ${{ needs.deploy.outputs.url }}"
+            echo "- Build: #${{ github.run_number }} (\`${{ github.sha }}\`)"
+          } >> "$GITHUB_STEP_SUMMARY"

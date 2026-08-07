@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/data.ts","./src/main.tsx","./src/setuptests.ts","./src/vite-env.d.ts","./src/__tests__/app.test.tsx","./src/__tests__/data.test.ts","./src/components/spotcard.tsx","./src/components/tidechart.tsx"],"version":"5.9.3"}
