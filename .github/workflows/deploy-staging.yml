@@ -73,14 +73,16 @@ jobs:
     name: Email the release notice
     needs: deploy
     runs-on: ubuntu-latest
+    # Job-level, deliberately: a step's `if` can read the `env` context, but not
+    # env declared on that same step, so gating on secrets has to happen here.
+    env:
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
     steps:
       # Skipped rather than failed when the mailbox secrets aren't configured:
       # a missing app password must not turn a good deploy red.
       - name: Send release email
         if: ${{ env.MAIL_USERNAME != '' && env.MAIL_PASSWORD != '' }}
-        env:
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
@@ -106,9 +108,6 @@ jobs:
 
       - name: Note when email is not configured
         if: ${{ env.MAIL_USERNAME == '' || env.MAIL_PASSWORD == '' }}
-        env:
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         run: |
           echo "::notice title=No release email::Set MAIL_USERNAME and MAIL_PASSWORD repo secrets to email on deploy."
 
