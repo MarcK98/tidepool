@@ -115,6 +115,28 @@ export const RATING_LABEL: Record<Rating, string> = {
   poor: "Poor",
 };
 
+/** Which spots the list shows. Mirrored by `ConditionsFilter` on iOS. */
+export type ConditionsFilter = "all" | "goodPlus";
+
+export const CONDITIONS_FILTERS: { id: ConditionsFilter; label: string }[] = [
+  { id: "all", label: "All spots" },
+  { id: "goodPlus", label: "Good & Epic" },
+];
+
+/** Ratings a spot may hold and still survive each filter. */
+const FILTER_RATINGS: Record<ConditionsFilter, Rating[]> = {
+  all: ["epic", "good", "fair", "poor"],
+  goodPlus: ["epic", "good"],
+};
+
+export function matchesFilter(spot: Spot, filter: ConditionsFilter): boolean {
+  return FILTER_RATINGS[filter].includes(rate(spot));
+}
+
+export function filterSpots(spots: Spot[], filter: ConditionsFilter): Spot[] {
+  return spots.filter((spot) => matchesFilter(spot, filter));
+}
+
 /**
  * Tide height in metres at `hour`, as a smooth semidiurnal curve peaking at the
  * spot's high tide. Two highs and two lows a day (period ≈ 12.42h).

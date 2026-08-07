@@ -54,4 +54,39 @@ final class SpotTests: XCTestCase {
     func testCatalogueIsNotEmpty() {
         XCTAssertEqual(SpotCatalogue.all.count, 6)
     }
+
+    // MARK: - Conditions filter
+
+    func testAllFilterKeepsTheWholeCatalogue() {
+        XCTAssertEqual(SpotCatalogue.spots(matching: .all), SpotCatalogue.all)
+    }
+
+    func testGoodPlusFilterKeepsOnlyGoodAndEpic() {
+        let kept = SpotCatalogue.spots(matching: .goodPlus)
+        XCTAssertFalse(kept.isEmpty)
+        XCTAssertTrue(kept.allSatisfy { $0.rating == .good || $0.rating == .epic })
+    }
+
+    func testGoodPlusFilterDropsFlatSpots() throws {
+        let bundoran = try spot("bundoran")
+        XCTAssertTrue(ConditionsFilter.all.matches(bundoran))
+        XCTAssertFalse(ConditionsFilter.goodPlus.matches(bundoran))
+    }
+
+    func testEpicSpotSurvivesBothFilters() throws {
+        let uluwatu = try spot("uluwatu")
+        XCTAssertTrue(ConditionsFilter.all.matches(uluwatu))
+        XCTAssertTrue(ConditionsFilter.goodPlus.matches(uluwatu))
+    }
+
+    func testFilterPreservesCatalogueOrder() {
+        let kept = SpotCatalogue.spots(matching: .goodPlus).map(\.id)
+        let expected = SpotCatalogue.all.map(\.id).filter(kept.contains)
+        XCTAssertEqual(kept, expected)
+    }
+
+    /// The labels are read side by side with the web filter rail.
+    func testFilterLabelsMatchTheWebClient() {
+        XCTAssertEqual(ConditionsFilter.allCases.map(\.label), ["All spots", "Good & Epic"])
+    }
 }
