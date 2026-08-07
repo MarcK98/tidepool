@@ -154,8 +154,10 @@ body {
 
 .section-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 
@@ -166,7 +168,53 @@ body {
 }
 
 .section-head p {
-  margin: 0;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Segmented control: one inset track, the active chip lifted out of it. */
+.filter {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(8, 25, 38, 0.6);
+}
+
+.chip {
+  padding: 7px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.chip:hover {
+  color: var(--text);
+}
+
+.chip.is-on {
+  background: linear-gradient(140deg, var(--aqua), var(--deep));
+  color: #04131b;
+  box-shadow: 0 6px 18px rgba(61, 218, 215, 0.22);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+
+.empty {
+  margin: 8px 0 0;
+  padding: 32px 0;
+  text-align: center;
   color: var(--muted);
   font-size: 14px;
 }

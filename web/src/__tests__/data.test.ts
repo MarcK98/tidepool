@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rate, SPOTS, tideAt, tideCurve } from "../data";
+import { filterSpots, matchesFilter, rate, SPOTS, tideAt, tideCurve } from "../data";
 
 const spot = (id: string) => {
   const found = SPOTS.find((s) => s.id === id);
@@ -44,5 +44,28 @@ describe("tide model", () => {
 describe("catalogue", () => {
   it("has unique spot ids", () => {
     expect(new Set(SPOTS.map((s) => s.id)).size).toBe(SPOTS.length);
+  });
+});
+
+describe("condition filter", () => {
+  it("keeps the whole catalogue on 'all'", () => {
+    expect(filterSpots(SPOTS, "all")).toEqual(SPOTS);
+  });
+
+  it("keeps only Good and Epic spots on 'goodPlus'", () => {
+    const kept = filterSpots(SPOTS, "goodPlus");
+    expect(kept.map((s) => rate(s)).every((r) => r === "good" || r === "epic")).toBe(true);
+    expect(kept.map((s) => s.id)).toEqual(["hanalei", "raglan", "taghazout", "uluwatu"]);
+  });
+
+  it("drops fair and poor spots", () => {
+    expect(matchesFilter(spot("ericeira"), "goodPlus")).toBe(false); // fair
+    expect(matchesFilter(spot("bundoran"), "goodPlus")).toBe(false); // poor
+  });
+
+  it("never keeps more than 'all' does", () => {
+    expect(filterSpots(SPOTS, "goodPlus").length).toBeLessThanOrEqual(
+      filterSpots(SPOTS, "all").length,
+    );
   });
 });

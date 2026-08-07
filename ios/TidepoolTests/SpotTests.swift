@@ -54,4 +54,26 @@ final class SpotTests: XCTestCase {
     func testCatalogueIsNotEmpty() {
         XCTAssertEqual(SpotCatalogue.all.count, 6)
     }
+
+    // MARK: - Condition filter
+
+    func testAllFilterKeepsTheWholeCatalogue() {
+        XCTAssertEqual(SpotCatalogue.spots(matching: .all), SpotCatalogue.all)
+    }
+
+    func testGoodPlusKeepsOnlyGoodAndEpic() {
+        let kept = SpotCatalogue.spots(matching: .goodPlus)
+        XCTAssertTrue(kept.allSatisfy { $0.rating == .good || $0.rating == .epic })
+        XCTAssertEqual(kept.map(\.id), ["hanalei", "raglan", "taghazout", "uluwatu"])
+    }
+
+    func testGoodPlusDropsFairAndPoor() throws {
+        XCTAssertFalse(ConditionFilter.goodPlus.matches(try spot("ericeira"))) // fair
+        XCTAssertFalse(ConditionFilter.goodPlus.matches(try spot("bundoran"))) // poor
+    }
+
+    func testGoodPlusNeverKeepsMoreThanAll() {
+        XCTAssertLessThanOrEqual(SpotCatalogue.spots(matching: .goodPlus).count,
+                                 SpotCatalogue.spots(matching: .all).count)
+    }
 }

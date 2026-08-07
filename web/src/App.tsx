@@ -1,7 +1,11 @@
-import { SPOTS } from "./data";
+import { useState } from "react";
+import { CONDITION_FILTERS, SPOTS, filterSpots, type ConditionFilter } from "./data";
 import { SpotCard } from "./components/SpotCard";
 
 export default function App() {
+  const [filter, setFilter] = useState<ConditionFilter>("all");
+  const visible = filterSpots(SPOTS, filter);
+
   return (
     <div className="page">
       <div className="glow" aria-hidden="true" />
@@ -40,14 +44,37 @@ export default function App() {
 
       <section className="spots" id="spots">
         <div className="section-head">
-          <h2>Today&apos;s conditions</h2>
-          <p>{SPOTS.length} spots tracked</p>
+          <div>
+            <h2>Today&apos;s conditions</h2>
+            <p>
+              {filter === "all"
+                ? `${SPOTS.length} spots tracked`
+                : `${visible.length} of ${SPOTS.length} spots firing`}
+            </p>
+          </div>
+          <div className="filter" role="group" aria-label="Filter spots by conditions">
+            {CONDITION_FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                className={`chip${filter === f.id ? " is-on" : ""}`}
+                aria-pressed={filter === f.id}
+                data-testid={`filter-${f.id}`}
+                onClick={() => setFilter(f.id)}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="grid">
-          {SPOTS.map((spot) => (
+          {visible.map((spot) => (
             <SpotCard key={spot.id} spot={spot} />
           ))}
         </div>
+        {visible.length === 0 && (
+          <p className="empty">Nothing firing right now — check back on the next swell.</p>
+        )}
       </section>
 
       <footer className="foot">
