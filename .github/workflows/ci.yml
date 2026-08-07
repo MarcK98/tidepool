@@ -1,8 +1,13 @@
 name: CI
 
+# `push` is deliberately main-only. Listening on every branch as well as
+# `pull_request` runs the whole suite TWICE for each PR — the two events carry
+# different `github.ref` values (`refs/heads/…` vs `refs/pull/N/merge`), so the
+# concurrency group below can't collapse them either. With a macOS job in the
+# matrix that doubles the scarce-runner queue for no extra signal.
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
