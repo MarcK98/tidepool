@@ -171,6 +171,48 @@ body {
   font-size: 14px;
 }
 
+/* Conditions filter: a pill rail that reads as one control, like the CTA row. */
+.filters {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--ink-2), #08192681);
+}
+
+.filter {
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.filter:hover {
+  color: var(--text);
+}
+
+.filter.is-active {
+  background: linear-gradient(140deg, var(--aqua), var(--deep));
+  color: #04131b;
+  box-shadow: 0 6px 18px rgba(61, 218, 215, 0.22);
+}
+
+.empty {
+  margin: 0;
+  padding: 32px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));

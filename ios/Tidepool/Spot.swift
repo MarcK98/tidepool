@@ -31,6 +31,33 @@ enum Rating: String, CaseIterable {
     }
 }
 
+/// Which spots the list shows. Mirrored by `ConditionsFilter` in
+/// `web/src/data.ts`.
+enum ConditionsFilter: String, CaseIterable, Identifiable {
+    case all, goodPlus
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .all: return "All spots"
+        case .goodPlus: return "Good & Epic"
+        }
+    }
+
+    /// Ratings a spot may hold and still survive this filter.
+    var ratings: [Rating] {
+        switch self {
+        case .all: return [.epic, .good, .fair, .poor]
+        case .goodPlus: return [.epic, .good]
+        }
+    }
+
+    func matches(_ spot: Spot) -> Bool {
+        ratings.contains(spot.rating)
+    }
+}
+
 extension Spot {
     /// One word for the whole forecast. Long-period swell with light wind is the
     /// thing surfers actually care about, so the score leans on period and
@@ -77,4 +104,8 @@ enum SpotCatalogue {
              swellFt: 8.0, periodSec: 17, windKts: 7, windDir: "ESE",
              waterTempF: 82, highTideM: 2.2, highTideHour: 10),
     ]
+
+    static func spots(matching filter: ConditionsFilter) -> [Spot] {
+        all.filter(filter.matches)
+    }
 }

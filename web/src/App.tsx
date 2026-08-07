@@ -1,7 +1,11 @@
-import { SPOTS } from "./data";
+import { useState } from "react";
+import { CONDITIONS_FILTERS, filterSpots, SPOTS, type ConditionsFilter } from "./data";
 import { SpotCard } from "./components/SpotCard";
 
 export default function App() {
+  const [filter, setFilter] = useState<ConditionsFilter>("all");
+  const visible = filterSpots(SPOTS, filter);
+
   return (
     <div className="page">
       <div className="glow" aria-hidden="true" />
@@ -41,13 +45,36 @@ export default function App() {
       <section className="spots" id="spots">
         <div className="section-head">
           <h2>Today&apos;s conditions</h2>
-          <p>{SPOTS.length} spots tracked</p>
+          <p>
+            {filter === "all"
+              ? `${SPOTS.length} spots tracked`
+              : `${visible.length} of ${SPOTS.length} spots tracked`}
+          </p>
         </div>
+
+        <div className="filters" role="group" aria-label="Filter spots by conditions">
+          {CONDITIONS_FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className={`filter${filter === id ? " is-active" : ""}`}
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="grid">
-          {SPOTS.map((spot) => (
+          {visible.map((spot) => (
             <SpotCard key={spot.id} spot={spot} />
           ))}
         </div>
+
+        {visible.length === 0 && (
+          <p className="empty">Nothing is firing right now. Try all spots.</p>
+        )}
       </section>
 
       <footer className="foot">
