@@ -45,6 +45,36 @@ final class SpotTests: XCTestCase {
         XCTAssertEqual(try spot("hanalei").tideCurve.count, 24)
     }
 
+    func testFeaturedSortLeavesTheCatalogueOrderAlone() {
+        XCTAssertEqual(SpotCatalogue.all.sorted(by: .featured).map(\.id),
+                       SpotCatalogue.all.map(\.id))
+    }
+
+    func testSwellSortPutsTheBiggestSwellFirst() throws {
+        let swells = SpotCatalogue.all.sorted(by: .swell).map(\.swellFt)
+        XCTAssertEqual(swells.first, SpotCatalogue.all.map(\.swellFt).max())
+        XCTAssertEqual(swells, swells.sorted(by: >))
+    }
+
+    /// Ties must fall back to catalogue order — the web does the same, and
+    /// `sorted` alone is not stable.
+    func testSwellSortBreaksTiesByCatalogueOrder() throws {
+        let base = try spot("hanalei")
+        let tied = ["a", "b", "c"].enumerated().map { index, id in
+            Spot(id: id, name: base.name, region: base.region,
+                 swellFt: id == "c" ? 9 : 5, periodSec: base.periodSec,
+                 windKts: base.windKts, windDir: base.windDir,
+                 waterTempF: base.waterTempF, highTideM: base.highTideM,
+                 highTideHour: base.highTideHour + index)
+        }
+        XCTAssertEqual(tied.sorted(by: .swell).map(\.id), ["c", "a", "b"])
+    }
+
+    func testSortKeepsEverySpot() {
+        XCTAssertEqual(Set(SpotCatalogue.all.sorted(by: .swell).map(\.id)),
+                       Set(SpotCatalogue.all.map(\.id)))
+    }
+
     func testCatalogueIdsAreUnique() {
         XCTAssertEqual(Set(SpotCatalogue.all.map(\.id)).count, SpotCatalogue.all.count)
     }

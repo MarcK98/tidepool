@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rate, SPOTS, tideAt, tideCurve } from "../data";
+import { rate, sortSpots, SPOTS, tideAt, tideCurve } from "../data";
 
 const spot = (id: string) => {
   const found = SPOTS.find((s) => s.id === id);
@@ -38,6 +38,33 @@ describe("tide model", () => {
 
   it("samples one point per hour of the day", () => {
     expect(tideCurve(spot("hanalei"))).toHaveLength(24);
+  });
+});
+
+describe("sortSpots", () => {
+  it("leaves the catalogue order alone when featured", () => {
+    expect(sortSpots(SPOTS, "featured").map((s) => s.id)).toEqual(SPOTS.map((s) => s.id));
+  });
+
+  it("puts the biggest swell first", () => {
+    const swells = sortSpots(SPOTS, "swell").map((s) => s.swellFt);
+    expect(swells[0]).toBe(Math.max(...SPOTS.map((s) => s.swellFt)));
+    expect(swells).toEqual([...swells].sort((a, b) => b - a));
+  });
+
+  it("breaks ties by catalogue order rather than platform whim", () => {
+    const tied = [
+      { ...spot("hanalei"), id: "a", swellFt: 5 },
+      { ...spot("hanalei"), id: "b", swellFt: 5 },
+      { ...spot("hanalei"), id: "c", swellFt: 9 },
+    ];
+    expect(sortSpots(tied, "swell").map((s) => s.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("keeps every spot and does not mutate the catalogue", () => {
+    const before = SPOTS.map((s) => s.id);
+    expect(sortSpots(SPOTS, "swell")).toHaveLength(SPOTS.length);
+    expect(SPOTS.map((s) => s.id)).toEqual(before);
   });
 });
 

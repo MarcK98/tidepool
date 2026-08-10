@@ -18,6 +18,41 @@ struct Spot: Identifiable, Hashable {
     let highTideHour: Int
 }
 
+/// How the spot list is ordered. Mirrors `SortMode` in `web/src/data.ts`.
+enum SortMode: String, CaseIterable, Identifiable {
+    case featured, swell
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .featured: return "Featured"
+        case .swell: return "Biggest swell"
+        }
+    }
+}
+
+extension Array where Element == Spot {
+    /// The list order. `.featured` is the catalogue order; `.swell` puts the
+    /// biggest wave first. Equal swell falls back to catalogue order — Swift's
+    /// `sorted` is not stable, and a tie broken differently here than on the
+    /// web is exactly the drift the two clients can't afford.
+    func sorted(by mode: SortMode) -> [Spot] {
+        switch mode {
+        case .featured:
+            return self
+        case .swell:
+            return enumerated()
+                .sorted { a, b in
+                    a.element.swellFt == b.element.swellFt
+                        ? a.offset < b.offset
+                        : a.element.swellFt > b.element.swellFt
+                }
+                .map(\.element)
+        }
+    }
+}
+
 enum Rating: String, CaseIterable {
     case epic, good, fair, poor
 

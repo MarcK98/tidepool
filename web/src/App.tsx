@@ -1,7 +1,11 @@
-import { SPOTS } from "./data";
+import { useState } from "react";
+import { SORT_LABEL, SORT_MODES, SPOTS, sortSpots, type SortMode } from "./data";
 import { SpotCard } from "./components/SpotCard";
 
 export default function App() {
+  const [sort, setSort] = useState<SortMode>("featured");
+  const spots = sortSpots(SPOTS, sort);
+
   return (
     <div className="page">
       <div className="glow" aria-hidden="true" />
@@ -40,11 +44,26 @@ export default function App() {
 
       <section className="spots" id="spots">
         <div className="section-head">
-          <h2>Today&apos;s conditions</h2>
-          <p>{SPOTS.length} spots tracked</p>
+          <div>
+            <h2>Today&apos;s conditions</h2>
+            <p>{SPOTS.length} spots tracked</p>
+          </div>
+          <div className="sort" role="group" aria-label="Sort spots">
+            {SORT_MODES.map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                className="sort-option"
+                aria-pressed={sort === mode}
+                onClick={() => setSort(mode)}
+              >
+                {SORT_LABEL[mode]}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="grid">
-          {SPOTS.map((spot) => (
+          {spots.map((spot) => (
             <SpotCard key={spot.id} spot={spot} />
           ))}
         </div>

@@ -93,6 +93,29 @@ export const SPOTS: Spot[] = [
   },
 ];
 
+export type SortMode = "featured" | "swell";
+
+/** The order the toggle offers, in the order it draws them. */
+export const SORT_MODES: SortMode[] = ["featured", "swell"];
+
+export const SORT_LABEL: Record<SortMode, string> = {
+  featured: "Featured",
+  swell: "Biggest swell",
+};
+
+/**
+ * The list order. "featured" is the catalogue order; "swell" puts the biggest
+ * wave first. Equal swell falls back to catalogue order rather than whatever
+ * the platform's sort happens to do, so web and iOS can't disagree on a tie.
+ */
+export function sortSpots(spots: Spot[], mode: SortMode): Spot[] {
+  if (mode === "featured") return [...spots];
+  return spots
+    .map((spot, index) => ({ spot, index }))
+    .sort((a, b) => b.spot.swellFt - a.spot.swellFt || a.index - b.index)
+    .map(({ spot }) => spot);
+}
+
 export type Rating = "epic" | "good" | "fair" | "poor";
 
 /**
