@@ -53,5 +53,18 @@ runtime has no such device. Use the script.
 - **CI** (`.github/workflows/ci.yml`) — web typecheck + tests + build, iOS build
   + unit tests. Runs on every branch and PR. It must be green before a merge.
 - **Deploy Staging** (`.github/workflows/deploy-staging.yml`) — builds the web
-  bundle, publishes it to GitHub Pages, and emails the release notice. Triggered
-  by hand (`gh workflow run "Deploy Staging"`) or by a push to `main`.
+  bundle, publishes it to GitHub Pages, then announces the release. Triggered by
+  hand (`gh workflow run "Deploy Staging"`) or by a push to `main`.
+
+The announcement has two halves, and the deploy is green whether or not either
+one lands:
+
+| | Needs | Fires |
+|---|---|---|
+| `release-notice` artifact → desktop banner | nothing | always |
+| Release email | `MAIL_USERNAME` + `MAIL_PASSWORD` secrets | only when both are set |
+
+The artifact is the machine-readable notice (build, Pages URL, sha, run URL).
+Run `./scripts/watch-staging.sh` on a Mac to poll for the next completed deploy
+and raise a notification from it; `./scripts/notify-mac.sh --demo` shows what
+that banner looks like without deploying anything.

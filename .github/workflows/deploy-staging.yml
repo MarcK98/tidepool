@@ -70,7 +70,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   notify:
-    name: Email the release notice
+    name: Announce the release
     needs: deploy
     runs-on: ubuntu-latest
     # Job-level, deliberately: a step's `if` can read the `env` context, but not
@@ -79,6 +79,44 @@ jobs:
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
     steps:
+      # Two independent announcements, and neither can break the other:
+      #
+      #   1. this notice — always published, no secrets, picked up by
+      #      scripts/watch-staging.sh on the desktop, which raises a banner
+      #   2. the email below — only when MAIL_* secrets exist
+      #
+      # The notice goes first so the banner is never waiting on SMTP.
+      #
+      # Values arrive through `env` rather than being interpolated into the
+      # script body, so a branch name can't inject shell.
+      - name: Publish the release notice
+        env:
+          BUILD: ${{ github.run_number }}
+          URL: ${{ needs.deploy.outputs.url }}
+          SHA: ${{ github.sha }}
+          REF: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          jq -n \
+            --arg build       "$BUILD" \
+            --arg url         "$URL" \
+            --arg sha         "$SHA" \
+            --arg ref         "$REF" \
+            --arg repo        "$REPO" \
+            --arg run_url     "$RUN_URL" \
+            --arg deployed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{build:$build, url:$url, sha:$sha, ref:$ref, repo:$repo,
+              run_url:$run_url, deployed_at:$deployed_at}' > release-notice.json
+          cat release-notice.json
+
+      - name: Upload the release notice
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notice
+          path: release-notice.json
+          retention-days: 7
+
       # Skipped rather than failed when the mailbox secrets aren't configured:
       # a missing app password must not turn a good deploy red.
       - name: Send release email
@@ -109,7 +147,7 @@ jobs:
       - name: Note when email is not configured
         if: ${{ env.MAIL_USERNAME == '' || env.MAIL_PASSWORD == '' }}
         run: |
-          echo "::notice title=No release email::Set MAIL_USERNAME and MAIL_PASSWORD repo secrets to email on deploy."
+          echo "::notice title=No release email::Set MAIL_USERNAME and MAIL_PASSWORD repo secrets to also email on deploy. The release notice was published either way, so scripts/watch-staging.sh still raises a desktop banner."
 
       - name: Summary
         run: |
